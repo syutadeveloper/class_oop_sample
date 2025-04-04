@@ -45,7 +45,7 @@ class MyXmlParser implements FileParser {
     public function parse($content) {
         $xml = simplexml_load_string($content);
         $users = [];
-
+        
         foreach ($xml->user as $user) {
             if (isset($user->name, $user->email, $user->age)) {
                 $users[] = new User((string)$user->name, (string)$user->email, (int)$user->age);
@@ -65,7 +65,7 @@ class ParserFactory {
             case "xml":
                 return new MyXmlParser();
             default:
-                throw new Exception("Неподдерживаемый тип файла");
+                throw new Exception("Unsupported file type");
         }
     }
 }
@@ -76,7 +76,7 @@ interface OutputHandler {
 
 class ScreenOutput implements OutputHandler {
     public function output($data) {
-        $output = "<table><thead><tr><th>Имя</th><th>Email</th><th>Возраст</th></tr></thead><tbody>";
+        $output = "<table><thead><tr><th>Name</th><th>Email</th><th>Age</th></tr></thead><tbody>";
         foreach ($data as $user) {
             $output .= "<tr><td>{$user->name}</td><td>{$user->email}</td><td>{$user->age}</td></tr>";
         }
@@ -87,23 +87,23 @@ class ScreenOutput implements OutputHandler {
 
 class EmailOutput implements OutputHandler {
     private $email;
-
+    
     public function __construct($email) {
         $this->email = $email;
     }
-
+    
     public function output($data) {
         if (!filter_var($this->email, FILTER_VALIDATE_EMAIL)) {
-            return "Неверный адрес электронной почты.";
+            return "Недействительный адрес электронной почты.";
         }
-
-        $message = "Имя, Email, Возраст\n";
+        
+        $message = "Name, Email, Age\n";
         foreach ($data as $user) {
             $message .= "{$user->name}, {$user->email}, {$user->age}\n";
         }
-
+        
         mail($this->email, "Результат обработки файла", $message);
-        return "Отправлено на почту.";
+        return "Отправлено по электронной почте.";
     }
 }
 
@@ -115,7 +115,7 @@ class OutputFactory {
             case "email":
                 return new EmailOutput($email);
             default:
-                throw new Exception("Неподдерживаемый тип вывода");
+                throw new Exception("Unsupported output type");
         }
     }
 }
@@ -138,7 +138,7 @@ class FileProcessor {
 
         $content = file_get_contents($this->file["tmp_name"]);
         $parsedData = $this->parser->parse($content);
-
+        
         return $this->outputHandler->output($parsedData);
     }
 }
@@ -147,10 +147,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     try {
         $parser = ParserFactory::createParser($_POST["inputType"]);
         $outputHandler = OutputFactory::createOutputHandler($_POST["outputType"], $_POST["email"] ?? "");
-
+        
         $processor = new FileProcessor($parser, $outputHandler, $_FILES["file"]);
         echo $processor->process();
     } catch (Exception $e) {
-        echo "Ошибка: " . $e->getMessage();
+        echo "Ошибка:  " . $e->getMessage();
     }
 }
